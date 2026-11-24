@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Scholars - Learn Together 🇹🇿</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#f1f5f9;color:#0f172a}
+header{background:#1e40af;color:#fff;padding:16px;text-align:center;position:sticky;top:0}
+header h1{margin:0;font-size:22px}header p{margin:4px 0 0;opacity:.9;font-size:13px}
+.card{background:#fff;margin:12px;padding:16px;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+input,select,textarea{width:100%;padding:12px;margin:6px 0;border:1px solid #cbd5e1;border-radius:10px;font-size:15px}
+button{background:#1e40af;color:#fff;border:0;padding:12px 16px;border-radius:10px;font-weight:700;width:100%;cursor:pointer}
+button.sec{background:#0ea5e9}button.green{background:#16a34a}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chip{background:#e0e7ff;padding:7px 12px;border-radius:20px;font-size:13px;cursor:pointer}
+.chip.active{background:#1e40af;color:#fff}
+.post{border-top:1px solid #e2e8f0;padding:12px 0}
+.post b{font-size:16px}.meta{font-size:12px;color:#64748b}
+.badge{background:#dcfce7;padding:3px 8px;border-radius:20px;font-size:11px}
+a{color:#1e40af;font-weight:700}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header><h1>📚 Social Scholars</h1><p>Study Together • Mwanza • Tanzania</p></header>
+
+<div id="loginBox" class="card">
+<h2>Welcome! Karibu 👋</h2>
+<p>Enter your name to start learning</p>
+<input id="username" placeholder="Your Name e.g. Baraka">
+<input id="phone" placeholder="Phone e.g. 0755 123 456">
+<select id="myClass"><option>Form 1</option><option>Form 2</option><option>Form 3</option><option selected>Form 4</option><option>Form 5</option><option>Form 6</option><option>University</option></select>
+<button onclick="login()">Start Learning →</button>
+<p style="font-size:12px;color:#64748b;text-align:center">No password needed • Free</p>
+</div>
+
+<div id="appBox" class="hidden">
+<div class="card">
+<h3 style="margin:0">Hi <span id="hiName"></span>! 👋 <span id="hiClass" class="badge"></span></h3>
+<input id="search" placeholder="🔍 Search notes, past papers..." oninput="render()">
+<div class="chips" id="chips"></div>
+</div>
+
+<div class="card">
+<h3 style="margin:0 0 8px">📤 Share Study Material</h3>
+<input id="title" placeholder="Title e.g. Biology Form 4 Notes - Photosynthesis">
+<select id="subject"><option>Biology</option><option>Mathematics</option><option>English</option><option>Kiswahili</option><option>Chemistry</option><option>Physics</option><option>History</option><option>Geography</option><option>Civics</option><option>Past Paper</option><option>Other</option></select>
+<select id="type"><option>📄 PDF / Notes (Google Drive Link)</option><option>🎥 Video (YouTube Link)</option><option>🎵 Audio</option><option>❓ Question / Discussion</option></select>
+<input id="link" placeholder="Paste Google Drive or YouTube link here">
+<textarea id="desc" placeholder="Describe it... e.g. Chapter 3, very helpful for NECTA"></textarea>
+<button class="green" onclick="post()">Post For Everyone →</button>
+<p style="font-size:12px;color:#64748b">How to share: Upload file to Google Drive → Share → Copy Link → Paste here</p>
+</div>
+
+<div class="card"><h3 style="margin:0">📚 Latest Materials</h3><div id="feed">Loading...</div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyDc74Y4KbYFlmdA6mDnii92E_vvh83vJLE",authDomain:"social-scholars-e595e.firebaseapp.com",projectId:"social-scholars-e595e",storageBucket:"social-scholars-e595e.firebasestorage.app",messagingSenderId:"285145417840",appId:"1:285145417840:web:a45210e321ac94b8e88cb5"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore(); const auth=firebase.auth();
+let user=JSON.parse(localStorage.getItem('ss_user')||'null'); let filter='All'; let allPosts=[];
+const subjects=['All','Biology','Mathematics','English','Kiswahili','Chemistry','Physics','History','Geography','Civics','Past Paper','Other'];
+function buildChips(){document.getElementById('chips').innerHTML=subjects.map(s=>`<span class="chip ${s===filter?'active':''}" onclick="setFilter('${s}')">${s}</span>`).join('')}
+function setFilter(s){filter=s;buildChips();render()}
+if(user){showApp()}
+function login(){const n=document.getElementById('username').value.trim();const p=document.getElementById('phone').value.trim();const c=document.getElementById('myClass').value;if(!n||!p){alert('Please enter Name and Phone');return}auth.signInAnonymously().then(()=>{user={name:n,phone:p,class:c};localStorage.setItem('ss_user',JSON.stringify(user));showApp()}).catch(e=>alert(e.message))}
+function showApp(){document.getElementById('loginBox').classList.add('hidden');document.getElementById('appBox').classList.remove('hidden');document.getElementById('hiName').innerText=user.name;document.getElementById('hiClass').innerText=user.class;buildChips();load()}
+function post(){const t=document.getElementById('title').value.trim();const l=document.getElementById('link').value.trim();if(!t){alert('Add a Title');return}db.collection('posts').add({title:t,subject:document.getElementById('subject').value,type:document.getElementById('type').value,link:l,desc:document.getElementById('desc').value,by:user.name,class:user.class,created:Date.now()}).then(()=>{alert('Posted! Asante!');document.getElementById('title').value='';document.getElementById('link').value='';document.getElementById('desc').value=''}).catch(e=>alert(e.message))}
+function load(){db.collection('posts').orderBy('created','desc').onSnapshot(s=>{allPosts=[];s.forEach(d=>allPosts.push(d.data()));render()})}
+function render(){const q=(document.getElementById('search')?.value||'').toLowerCase();let list=allPosts.filter(p=>(filter==='All'||p.subject===filter)&&(p.title.toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q)));document.getElementById('feed').innerHTML=list.length?list.map(p=>`<div class="post"><b>${p.title}</b><div class="meta">${p.subject} • ${p.by} • ${p.class}</div><p style="margin:6px 0">${p.desc||''}</p>${p.link?`<a href="${p.link}" target="_blank">📂 Open Material →</a>`:''}<div style="margin-top:6px"><span class="badge">${p.type}</span></div></div>`).join(''):'<p>No materials yet. Be the first to share!</p>'}
+</script>
+</body>
+</html>
